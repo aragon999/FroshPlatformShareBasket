@@ -1,0 +1,15 @@
+{% extends '@Storefront/storefront/page/account/sidebar.html.twig' %}
+
+{% block page_account_sidebar_menu_inner %}
+    {{ parent() }}
+
+    {% if config('FroshPlatformShareBasket.config.showSavedCartsInCustomerAccount') %}
+        {% block page_account_sidebar_link_saved_basket %}
+            <a href="{{ path('frontend.account.frosh.share-baskets.load') }}"
+               title="{{ "frosh-share-basket.savedBasket"|trans }}"
+               class="list-group-item list-group-item-action account-aside-item{% if activeRoute is same as('frontend.account.frosh.share-baskets.load') %} is-active{% endif %}">
+                {{ "frosh-share-basket.savedBasket"|trans }}
+            </a>
+        {% endblock %}
+    {% endif %}
+{% endblock %}
