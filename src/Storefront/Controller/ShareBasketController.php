@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Frosh\ShareBasket\Storefront\Controller;
 
+use Frosh\ShareBasket\Services\CustomerShareBasketServiceInterface;
 use Frosh\ShareBasket\Services\ShareBasketServiceInterface;
 use Shopware\Core\System\SalesChannel\SalesChannelContext;
 use Shopware\Core\System\SystemConfig\SystemConfigService;
@@ -16,6 +17,7 @@ class ShareBasketController extends StorefrontController
 {
     public function __construct(
         private readonly ShareBasketServiceInterface $shareBasketService,
+        private readonly CustomerShareBasketServiceInterface $customerShareBasketService,
         private readonly SystemConfigService $systemConfigService
     ) {
     }
@@ -59,41 +61,47 @@ class ShareBasketController extends StorefrontController
         );
     }
 
-    #[Route(path: 'account/loadBaskets/', name: 'frontend.account.frosh.share-baskets.load', methods: ['GET'], defaults: ['_loginRequired' => true])]
+    #[Route(path: 'account/saved-carts', name: 'frontend.frosh.share-basket.account.saved-carts', methods: ['GET'], defaults: ['_loginRequired' => true])]
     public function accountLoadBaskets(SalesChannelContext $context): Response
     {
-        $showSavedCarts = $this->systemConfigService->get('FroshPlatformShareBasket.config.showSavedCartsInCustomerAccount');
+        $showSavedCarts = $this->systemConfigService->getBool(
+            'FroshPlatformShareBasket.config.showSavedCartsInCustomerAccount',
+            $context->getSalesChannelId()
+        );
 
-        if ($showSavedCarts === null || $showSavedCarts === false) {
+        if ($showSavedCarts === false) {
             $this->addFlash('info', $this->trans('frosh-share-basket.savedCartsOverviewDisabled'));
 
             return $this->redirectToRoute('frontend.account.home.page');
         }
-        $froshSavedBaskets = $this->shareBasketService->loadBaskets($context);
 
         return $this->renderStorefront(
-            '@Storefront/storefront/page/account/saved-baskets/saved-baskets.html.twig',
+            '@Storefront/storefront/page/account/saved-carts/index.html.twig',
             [
-                'froshSavedBaskets' => $froshSavedBaskets,
+                'froshSavedBaskets' => $this->customerShareBasketService->loadCustomerCarts($context),
             ]
         );
     }
 
-    #[Route(path: 'account/deleteBasket/{id}', name: 'frontend.account.frosh.share-basket.delete', methods: ['GET'])]
+    #[Route(path: 'account/saved-carts/delete/{id}', name: 'frontend.frosh.share-basket.account.saved-carts-delete', methods: ['GET'], defaults: ['_loginRequired' => true])]
     public function accountDeleteBasket(string $id, Request $request, SalesChannelContext $context): Response
     {
-        $showSavedCarts = $this->systemConfigService->get('FroshShareBasket.config.showSavedCartsInCustomerAccount');
+        $showSavedCarts = $this->systemConfigService->getBool(
+            'FroshPlatformShareBasket.config.showSavedCartsInCustomerAccount',
+            $context->getSalesChannelId()
+        );
 
-        if ($showSavedCarts === null || $showSavedCarts === false) {
+        if ($showSavedCarts === false) {
             $this->addFlash('info', $this->trans('frosh-share-basket.savedCartsOverviewDisabled'));
 
             return $this->redirectToRoute('frontend.account.home.page');
         }
 
-        $this->shareBasketService->removeCustomerBasket($id, $context);
+        $this->customerShareBasketService->removeCustomerCart($id, $context);
         $request->getSession()->remove('froshShareBasketHash');
-        $this->addFlash('success', $this->trans('frosh-share-basket.basketDeleted'));
 
-        return $this->redirectToRoute('frontend.account.frosh.share-baskets.load');
+        $this->addFlash('success', $this->trans('frosh-share-basket.cartRemoved'));
+
+        return $this->redirectToRoute('frontend.frosh.share-basket.account.saved-carts');
     }
 }

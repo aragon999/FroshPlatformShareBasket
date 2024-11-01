@@ -48,8 +48,10 @@ class ShareBasketService implements ShareBasketServiceInterface
     public function saveCart(Request $request, array $data, SalesChannelContext $salesChannelContext): ?string
     {
         $criteria = new Criteria();
-        $criteria->addFilter(new EqualsFilter('salesChannelId', $salesChannelContext->getSalesChannel()->getId()));
-        $criteria->addFilter(new EqualsFilter('hash', $data['hash']));
+        $criteria
+            ->addFilter(new EqualsFilter('salesChannelId', $salesChannelContext->getSalesChannelId()))
+            ->addFilter(new EqualsFilter('hash', $data['hash']))
+        ;
 
         $shareBasketEntity = $this->shareBasketRepository->search($criteria, $salesChannelContext->getContext())->first();
         if ($shareBasketEntity instanceof ShareBasketEntity) {
@@ -63,7 +65,8 @@ class ShareBasketService implements ShareBasketServiceInterface
             $this->shareBasketRepository->update([$data], $salesChannelContext->getContext());
             $request->getSession()->set('froshShareBasketHash', $data['hash']);
 
-            $this->persistCustomer($shareBasketEntity->getId(), $salesChannelContext);
+            $this->persistSavedCartToCustomer($shareBasketEntity->getId(), $salesChannelContext);
+
             return $this->generateBasketUrl($data['basketId']);
         }
 
@@ -103,18 +106,6 @@ class ShareBasketService implements ShareBasketServiceInterface
         $restoredCart->addErrors(...array_values($cart->getErrors()->getPersistent()->getElements()));
 
         return $restoredCart;
-    }
-
-    public function loadBaskets(SalesChannelContext $salesChannelContext): ?ShareBasketCollection
-    {
-        $criteria = new Criteria();
-        $criteria->addFilter(new EqualsFilter('salesChannelId', $salesChannelContext->getSalesChannel()->getId()));
-        $criteria->addFilter(new EqualsFilter('customers.id', $salesChannelContext->getCustomerId()));
-        $criteria->addAssociation('lineItems');
-        $criteria->addAssociation('lineItems.product.cover');
-        $criteria->addAssociation('customers');
-
-        return $this->shareBasketRepository->search($criteria, $salesChannelContext->getContext())->getEntities();
     }
 
     public function prepareLineItems(SalesChannelContext $salesChannelContext): array
@@ -166,16 +157,6 @@ class ShareBasketService implements ShareBasketServiceInterface
             'salesChannelId' => $salesChannelContext->getSalesChannel()->getId(),
             'lineItems' => $lineItems,
         ];
-    }
-
-    public function removeCustomerBasket(string $id, SalesChannelContext $salesChannelContext): void
-    {
-        $this->shareBasketCustomerRepository->delete([
-            [
-                'shareBasketId' => $id,
-                'customerId' => $salesChannelContext->getCustomerId()
-            ]
-        ], $salesChannelContext->getContext());
     }
 
     public function cleanup(): ?EntityWrittenContainerEvent
@@ -244,7 +225,8 @@ class ShareBasketService implements ShareBasketServiceInterface
             $id = Uuid::randomHex();
             $data['id'] = $id;
             $result = $this->shareBasketRepository->create([$data], $salesChannelContext->getContext());
-            $this->persistCustomer($id, $salesChannelContext);
+
+            $this->persistSavedCartToCustomer($id, $salesChannelContext);
 
         } catch (\Exception) {
             $data['basketId'] = $this->generateShareBasketId();
@@ -264,22 +246,17 @@ class ShareBasketService implements ShareBasketServiceInterface
         return $this->generateBasketUrl($data['basketId']);
     }
 
-    private function persistCustomer(string $shareBasketId, SalesChannelContext $salesChannelContext): void
+    private function persistSavedCartToCustomer(string $shareBasketId, SalesChannelContext $salesChannelContext): void
     {
-        $customer = $salesChannelContext->getCustomer();
-        if ($customer === null) {
+        $customerId = $salesChannelContext->getCustomerId();
+        if ($customerId === null) {
             return;
         }
 
-        $this->shareBasketCustomerRepository->upsert(
-            [
-                [
-                    'shareBasketId' => $shareBasketId,
-                    'customerId' => $customer->getId(),
-                ],
-            ],
-            $salesChannelContext->getContext()
-        );
+        $this->shareBasketCustomerRepository->upsert([[
+            'shareBasketId' => $shareBasketId,
+            'customerId' => $customerId,
+        ]], $salesChannelContext->getContext());
     }
 
     private function generateBasketUrl(string $basketId): string

@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Frosh\ShareBasket\Core\Content\ShareBasket;
 
 use Frosh\ShareBasket\Core\Content\ShareBasket\Aggregate\ShareBasketLineItem\ShareBasketLineItemCollection;
-use Shopware\Core\Checkout\Customer\CustomerEntity;
+use Shopware\Core\Checkout\Customer\CustomerCollection;
 use Shopware\Core\Framework\DataAbstractionLayer\Entity;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityIdTrait;
 use Shopware\Core\System\SalesChannel\SalesChannelEntity;
@@ -23,7 +23,7 @@ class ShareBasketEntity extends Entity
 
     protected SalesChannelEntity $salesChannel;
 
-    protected ?CustomerEntity $customer;
+    protected ?CustomerCollection $customers;
 
     protected ShareBasketLineItemCollection $lineItems;
 
@@ -77,14 +77,14 @@ class ShareBasketEntity extends Entity
         $this->salesChannel = $salesChannel;
     }
 
-    public function getCustomer(): ?CustomerEntity
+    public function getCustomers(): ?CustomerCollection
     {
-        return $this->customer;
+        return $this->customers;
     }
 
-    public function setCustomer(CustomerEntity $customer): void
+    public function setCustomers(CustomerCollection $customers): void
     {
-        $this->customer = $customer;
+        $this->customers = $customers;
     }
 
     public function getLineItems(): ShareBasketLineItemCollection

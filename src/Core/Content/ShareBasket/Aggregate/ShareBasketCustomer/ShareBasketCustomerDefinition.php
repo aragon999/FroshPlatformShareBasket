@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Frosh\ShareBasket\Core\Content\ShareBasket\Aggregate\ShareBasketCustomer;
 
 use Frosh\ShareBasket\Core\Content\ShareBasket\ShareBasketDefinition;

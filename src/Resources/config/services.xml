@@ -39,6 +39,13 @@
 
         <service id="Frosh\ShareBasket\Services\ShareBasketServiceInterface" alias="Frosh\ShareBasket\Services\ShareBasketService" />
 
+        <service id="Frosh\ShareBasket\Services\CustomerShareBasketService">
+            <argument id="frosh_share_basket.repository" type="service"/>
+            <argument id="frosh_share_basket_customer.repository" type="service"/>
+        </service>
+
+        <service id="Frosh\ShareBasket\Services\CustomerShareBasketServiceInterface" alias="Frosh\ShareBasket\Services\CustomerShareBasketService" />
+
         <service id="Frosh\ShareBasket\Core\Content\Product\ProductShareBasketExtension">
             <tag name="shopware.entity.extension"/>
         </service>

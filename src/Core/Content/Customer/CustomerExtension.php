@@ -21,7 +21,7 @@ class CustomerExtension extends EntityExtension
     public function extendFields(FieldCollection $collection): void
     {
         $collection->add(
-            (new ManyToManyAssociationField('shareBaskets', ShareBasketDefinition::class, ShareBasketCustomerDefinition::class, 'customer_id', 'share_basket_id'))
+            (new ManyToManyAssociationField('froshSavedCarts', ShareBasketDefinition::class, ShareBasketCustomerDefinition::class, 'customer_id', 'share_basket_id'))
         );
     }
 }
